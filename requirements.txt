@@ -1,0 +1,5 @@
+cocotb==1.9.2
+find_libpython==0.4.1
+forastero @ git+https://github.com/Intuity/forastero@364eec88d1f59771ba093757bd3ca2c4ab245b3d
+tabulate==0.9.0
+yappi==1.6.10
