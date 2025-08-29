@@ -45,8 +45,8 @@ architecture RTL of spi_master_axis is
     --Master output serial clock (12.5 MHz)
     signal o_sclk : std_logic;
     --Serial clock counter
-    signal sclk_counter : std_logic_vector(2 downto 0) := (others => '0');
-    signal prev_sclk_counter : std_logic_vector(2 downto 0) := (others => '0');
+    signal sclk_counter : std_logic_vector(2 downto 0) := (others => '1');
+    signal prev_sclk_counter : std_logic_vector(2 downto 0) := (others => '1');
 
     --Sample clock (44.1 kHz)
     signal sample_pulse : std_logic;
@@ -128,7 +128,7 @@ begin
             else
                 if(sample_pulse = '1') then
                     do_spi_sample <= '1';
-                elsif(spi_bit_counter = 0 and sclk_counter = "011" and prev_sclk_counter = "010") then
+                elsif(spi_bit_counter = 0 and sclk_counter = "100" and prev_sclk_counter = "011") then
                     do_spi_sample <= '0';
                 end if;
             end if;
@@ -137,7 +137,7 @@ begin
 
     --Sample collection
     write_whole_sample_count <= (spi_whole_sample_count-1) when (spi_whole_sample_count > 0) else 15;
-    write_sample_condition <= '1' when (sclk_counter = "100" and prev_sclk_counter = "011" and do_spi_sample = '0') else '0';
+    write_sample_condition <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100" and do_spi_sample = '0') else '0';
 
     spi_samples(write_whole_sample_count) <= spi_sample when (write_sample_condition = '1');
 
@@ -149,7 +149,7 @@ begin
             if(rstn_i = '0') then
                 spi_sample <= (others => '0');
                 spi_bit_counter <= 15;
-            elsif(sclk_counter = "011" and prev_sclk_counter = "010") then
+            elsif(sclk_counter = "100" and prev_sclk_counter = "011") then
                 if(spi_bit_counter > 0 and do_spi_sample = '1') then
                     spi_sample(spi_bit_counter) <= i_miso;
                     spi_bit_counter <= spi_bit_counter - 1;
@@ -204,19 +204,8 @@ begin
         end if;
     end process do_transfer_process;
 
-    --Slave select assignment process
-    slave_select_process : process(clk_i)
-    begin
-        if(rising_edge(clk_i)) then
-            if(rstn_i = '0') then
-                o_ss <= '1';
-            elsif(do_spi_sample = '1' or sample_pulse = '1') then
-                o_ss <= '0';
-            else
-                o_ss <= '1';
-            end if;
-        end if;
-    end process slave_select_process;
+
+    o_ss <= '0' when (do_spi_sample = '1' or sample_pulse = '1') else '1';
 
     --TVALID assignment process
     axis_tvalid_process : process(clk_i)
@@ -248,17 +237,32 @@ begin
     end process axis_tdata_process;
 
     --Serial clock assignment
-    o_sclk <= '0' when (sclk_counter < "100" and o_ss = '0') else '1';
+    o_sclk_process : process(clk_i)
+    begin
+        if(rising_edge(clk_i)) then
+            if(rstn_i = '0') then
+                o_sclk <= '0';
+            elsif(sclk_counter < "100" and o_ss = '0') then
+                o_sclk <= '1';
+            else
+                o_sclk <= '0';
+            end if;
+        end if;
+    end process o_sclk_process;
+
     --Serial clock counter process
     sclk_counter_process : process(clk_i)
     begin
         if(rising_edge(clk_i)) then
             if(rstn_i = '0') then
-                prev_sclk_counter <= (others => '0');
-                sclk_counter <= (others => '0');
+                prev_sclk_counter <= (others => '1');
+                sclk_counter <= (others => '1');
             elsif(do_spi_sample = '1' and read_spi_i = '1') then
                 prev_sclk_counter <= sclk_counter;
                 sclk_counter <= std_logic_vector(unsigned(sclk_counter) + 1);
+            elsif(o_ss = '1') then
+                sclk_counter <= (others => '1');
+                prev_sclk_counter <= (others => '1');
             else
                 sclk_counter <= (others => '0');
                 prev_sclk_counter <= (others => '0');

@@ -8,10 +8,13 @@ from axi4stream.monitor import AXI4StreamMonitor
 from axi4stream.transaction import AXI4StreamTransfer
 from axi4stream.target import AXI4StreamTarget
 from axi4stream.sequences import axi4stream_backpressure_finite
+
+from axi4stream.sequences import axi4stream_backpressure_list
+
 from cocotb.triggers import ClockCycles
 from cocotb.log import SimLog
 from forastero.monitor import MonitorEvent
-from forastero.scoreboard import DrainPolicy
+from forastero.driver import DriverEvent
 
 class Testbench(BaseBench):
     def __init__(self, dut):
@@ -102,6 +105,44 @@ async def backpressure(tb : Testbench, log: SimLog):
     tb.dut.read_spi_i.value = 1
     tb.schedule(axi4stream_backpressure_finite(driver=tb.axi4stream_target, transfers = 128))
     tb.schedule(spi_send_array(driver=tb.spi_drv, data=ref_data))
+    for _ in ref_data:
+        await tb.axi4stream_mon.wait_for(MonitorEvent.CAPTURE)
+    tb.dut.read_spi_i.value = 0
+
+@Testbench.testcase(reset_wait_during=2, reset_wait_after=0, timeout=400000, shutdown_delay=10, shutdown_loops=1)
+async def long_not_ready(tb: Testbench, log: SimLog):
+    ref_data=range(1000, 1032)
+    ref_trans = []
+    for ind, data in enumerate(ref_data):
+        ref_trans.append(
+            AXI4StreamTransfer(
+                index=ind % 16,
+                data=data,
+                last=int((ind + 1) % 16 == 0)
+            )
+        )
+
+
+    axi4stream_leftover_sample = AXI4StreamTransfer(
+                index=0,
+                data=2007,
+                last=False
+            )
+    
+    ref_trans = [axi4stream_leftover_sample] + ref_trans
+
+    tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
+    tb.dut.read_spi_i.value = 1
+    tb.dut.axis_tready_i.value = 0
+    #tb.schedule(axi4stream_backpressure_list(driver=tb.axi4stream_target, transfers=[False]*8, cycles=126))
+    tb.schedule(spi_send_array(driver=tb.spi_drv, data=ref_data))
+    tb.schedule(spi_send_array(driver=tb.spi_drv, data=range(2000, 2008)))
+
+    for _ in range(9):
+        await tb.spi_drv.wait_for(DriverEvent.POST_DRIVE)
+    #tb.schedule(axi4stream_backpressure_list(driver=tb.axi4stream_target, transfers=[True]*128, cycles=126))
+    tb.dut.axis_tready_i.value = 1
+
     for _ in ref_data:
         await tb.axi4stream_mon.wait_for(MonitorEvent.CAPTURE)
     tb.dut.read_spi_i.value = 0

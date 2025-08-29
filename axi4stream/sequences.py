@@ -50,3 +50,20 @@ async def axi4stream_backpressure_finite(
             )
         )
         await driver.wait_for(DriverEvent.PRE_DRIVE)
+
+@forastero.sequence(auto_lock=True)
+@forastero.requires("driver", AXI4StreamTarget)
+async def axi4stream_backpressure_list(
+    ctx: SeqContext,
+    driver: SeqProxy[AXI4StreamTarget],
+    transfers: list[bool],
+    cycles: int = 1,
+):
+    for transfer in transfers:
+        driver.enqueue(
+            AXI4StreamBackpressure(
+                ready=transfer,
+                cycles=cycles,
+            )
+        )
+        await driver.wait_for(DriverEvent.PRE_DRIVE)
