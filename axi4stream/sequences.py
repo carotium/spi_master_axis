@@ -38,7 +38,7 @@ async def axi4stream_backpressure_finite(
     transfers: int,
     min_interval: int = 1,
     max_interval: int = 10,
-    backpressure: float = 0.5,
+    backpressure: float = 0.9,
 ):
     for _ in range(transfers):
         driver.enqueue(
