@@ -103,7 +103,7 @@ async def backpressure(tb : Testbench, log: SimLog):
         )
     tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
     tb.dut.read_spi_i.value = 1
-    tb.schedule(axi4stream_backpressure_finite(driver=tb.axi4stream_target, transfers = 128))
+    tb.schedule(axi4stream_backpressure_finite(driver=tb.axi4stream_target, transfers = 65536))
     tb.schedule(spi_send_array(driver=tb.spi_drv, data=ref_data))
     for _ in ref_data:
         await tb.axi4stream_mon.wait_for(MonitorEvent.CAPTURE)
