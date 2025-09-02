@@ -4,9 +4,10 @@ use ieee.numeric_std.all;
 
 entity spi_master_axis is
     generic(
+        --TDATA width in bits
         axis_tdata_o_WIDTH : integer := 32;
-        M_SPI_TRANSFER_LENGTH : integer := 16;
-        M_SPI_SAMPLE_LENGTH : integer := 16
+        --Number of SPI samples in one AXI Stream transfer
+        M_SPI_TRANSFER_LENGTH : integer := 16
     );
     port(
         --Master clock    
@@ -61,21 +62,8 @@ architecture RTL of spi_master_axis is
     signal spi_bit_counter : integer range 0 to 15 := 15;
 
     --We want to send an AXIS packet of 16 SPI samples
-    type spi_sample_array is array (0 to M_SPI_TRANSFER_LENGTH-1) of std_logic_vector(15 downto 0);
-    signal spi_samples : spi_sample_array := (others => (others => '0'));
     --Spi whole sample of 16 bits counter
     signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH-1 := 0;
-    --
-    signal write_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH-1 := 0;
-
-    --Spi samples is filled with M_SPI_TRANSFER_LENGTH samples
-    --Transfer samples over AXIS
-    signal do_transfer : std_logic := '0';
-    --Sample counter for transfer
-    signal transfer_sample_counter : integer range 0 to M_SPI_SAMPLE_LENGTH-1 := 0;
-    signal prev_transfer_sample_counter : integer range 0 to M_SPI_SAMPLE_LENGTH-1 := 0;
-    --Transfered all stored samples
-    signal transfer_completed : std_logic := '0';
 
     --This tvalid for use in process
     signal this_tvalid : std_logic := '0';
@@ -85,9 +73,8 @@ architecture RTL of spi_master_axis is
     signal this_tdata : std_logic_vector(axis_tdata_o_WIDTH-1 downto 0) := (others => '0');
     --Next tdata for assignment in a process
     signal next_tdata : std_logic_vector(axis_tdata_o_WIDTH-1 downto 0) := (others => '0');
-
-    --testing signal
-    signal write_sample_condition : std_logic := '0';
+    --This tlast for use in process
+    signal this_tlast : std_logic := '0';
 
 begin
 
@@ -98,12 +85,23 @@ begin
 
     --Internal signal use
     axis_tdata_o <= this_tdata;
+    axis_tvalid_o <= this_tvalid;
+    axis_tlast_o <= this_tlast;
 
     --Sample clock signal
     sample_pulse <= '1' when (sample_pulse_counter = 50) else '0';
 
     --Set TLAST when last SPI sample is assigned to TDATA
-    axis_tlast_o <= '1' when (write_whole_sample_count = 15 and spi_whole_sample_count = 0 and this_tvalid = '1') else '0';
+    this_tlast <= '1' when (spi_whole_sample_count = 15 and this_tvalid = '1') else '0';
+
+    --Valid comes as soon as we get the whole sample from SPI
+    next_tvalid <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100" and do_spi_sample = '0') else '0';
+
+    --Send spi_sample as soon as it is sampled
+    next_tdata <= x"0000" & spi_sample when (next_tvalid = '1') else x"DEADBEEF";
+
+    --Slave select goes low when sample pulse (44.1 kHz) and do_spi_sample (126 clk cycles for SPI sample)
+    o_ss <= '0' when (do_spi_sample = '1' or sample_pulse = '1') else '1';
 
     --Sample clock counter process
     sample_pulse_process : process(clk_i)
@@ -135,14 +133,7 @@ begin
         end if;
     end process do_spi_sample_process;
 
-    --Sample collection
-    write_whole_sample_count <= (spi_whole_sample_count-1) when (spi_whole_sample_count > 0) else 15;
-    write_sample_condition <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100" and do_spi_sample = '0') else '0';
-
-    spi_samples(write_whole_sample_count) <= spi_sample when (write_sample_condition = '1');
-
     --Sample collection process
-    --do_transfer samples over AXIS assignment
     sampling_process : process(clk_i)
     begin
         if(rising_edge(clk_i)) then
@@ -153,59 +144,29 @@ begin
                 if(spi_bit_counter > 0 and do_spi_sample = '1') then
                     spi_sample(spi_bit_counter) <= i_miso;
                     spi_bit_counter <= spi_bit_counter - 1;
-                elsif(do_spi_sample = '1') then
+                elsif(do_spi_sample = '1' or spi_bit_counter = 0) then
                     --Last bit of sample stored
                     spi_sample(spi_bit_counter) <= i_miso;
                     spi_bit_counter <= 15;
                     --One sample of 16 bits done
-                    if(spi_whole_sample_count < M_SPI_TRANSFER_LENGTH-1) then
-                        spi_whole_sample_count <= spi_whole_sample_count + 1;
-                        do_transfer <= '0';
-                    else
-                        spi_whole_sample_count <= 0;
-                        do_transfer <= '1';
-                    end if;
                 end if;
             end if;
         end if;
     end process sampling_process;
 
-    --next_tvalid assignment
-    --next_tvalid <= '1' when (do_transfer = '1' and transfer_completed = '0') else '0';
-
-    --Valid comes as soon as we get the whole sample from SPI
-    next_tvalid <= '1' when (write_sample_condition = '1') else '0';
-
-    --SPI sample array to next_tdata assignment
-    --next_tdata <= x"0000" & spi_samples(transfer_sample_counter) when (next_tvalid = '1') else x"DEADBEEF";
-
-    --Send spi_sample as soon as it is sampled
-    next_tdata <= x"0000" & spi_sample when (next_tvalid = '1') else x"DEADBEEF";
-
-    do_transfer_process : process(clk_i)
+    transfer_process : process(clk_i)
     begin
         if(rising_edge(clk_i)) then
             if(rstn_i = '0') then
-                transfer_sample_counter <= 0;
-                prev_transfer_sample_counter <= 0;
-                transfer_completed <= '0';
-            elsif(do_transfer = '1' and transfer_completed = '0' and axis_tready_i = '1') then
-                if(transfer_sample_counter < M_SPI_SAMPLE_LENGTH-1) then
-                    prev_transfer_sample_counter <= transfer_sample_counter;
-                    transfer_sample_counter <= transfer_sample_counter + 1;
-                else
-                    prev_transfer_sample_counter <= transfer_sample_counter;
-                    transfer_sample_counter <= 0;
-                    transfer_completed <= '1';
-                end if;
-            elsif(transfer_sample_counter = 0 and do_transfer = '0') then
-                transfer_completed <= '0';
+                spi_whole_sample_count <= 0;
+            elsif(spi_whole_sample_count < M_SPI_TRANSFER_LENGTH-1 and this_tvalid = '1' and axis_tready_i = '1') then
+                spi_whole_sample_count <= spi_whole_sample_count + 1;
+            elsif(spi_whole_sample_count = M_SPI_TRANSFER_LENGTH - 1 and this_tlast = '1') then
+                --16th SPI sample transferred on AXI Stream
+                spi_whole_sample_count <= 0;
             end if;
         end if;
-    end process do_transfer_process;
-
-
-    o_ss <= '0' when (do_spi_sample = '1' or sample_pulse = '1') else '1';
+    end process transfer_process;
 
     --TVALID assignment process
     axis_tvalid_process : process(clk_i)
@@ -213,10 +174,8 @@ begin
         if(rising_edge(clk_i)) then
             if(rstn_i = '0') then
                 this_tvalid <= '0';
-                axis_tvalid_o <= '0';
             elsif(this_tvalid = '0' or axis_tready_i = '1') then
                 this_tvalid <= next_tvalid;
-                axis_tvalid_o <= next_tvalid;
             end if;
         end if;
     end process axis_tvalid_process;
@@ -227,7 +186,7 @@ begin
         if(rising_edge(clk_i)) then
             if(rstn_i = '0') then
                 this_tdata <= (others => '0');
-            elsif(this_tvalid = '0' or axis_tready_i = '1') then
+            elsif(this_tvalid = '0' or axis_tready_i = '1' or next_tvalid = '1') then
                 this_tdata <= next_tdata;
                 if(next_tvalid = '0') then
                     this_tdata <= (others => '0');
