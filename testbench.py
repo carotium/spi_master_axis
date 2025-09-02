@@ -129,18 +129,16 @@ async def long_not_ready(tb: Testbench, log: SimLog):
                 last=False
             )
     
-    ref_trans = [axi4stream_leftover_sample] + ref_trans
+    #ref_trans = [axi4stream_leftover_sample] + ref_trans
 
     tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
     tb.dut.read_spi_i.value = 1
     tb.dut.axis_tready_i.value = 0
-    #tb.schedule(axi4stream_backpressure_list(driver=tb.axi4stream_target, transfers=[False]*8, cycles=126))
     tb.schedule(spi_send_array(driver=tb.spi_drv, data=ref_data))
     tb.schedule(spi_send_array(driver=tb.spi_drv, data=range(2000, 2008)))
 
     for _ in range(9):
         await tb.spi_drv.wait_for(DriverEvent.POST_DRIVE)
-    #tb.schedule(axi4stream_backpressure_list(driver=tb.axi4stream_target, transfers=[True]*128, cycles=126))
     tb.dut.axis_tready_i.value = 1
 
     for _ in ref_data:
