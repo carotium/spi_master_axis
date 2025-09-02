@@ -18,7 +18,7 @@ entity spi_master_axis is
         read_spi_i : in std_logic := '0';
 
         --Master out serial clock
-        spi_sclk_o : out std_logic := '1';
+        spi_sclk_o : out std_logic := '0';
         --Master in miso
         spi_miso_i : in std_logic := '0';
         --Master out slave select
@@ -44,7 +44,7 @@ architecture RTL of spi_master_axis is
     --Master input miso
     signal i_miso : std_logic;
     --Master output serial clock (12.5 MHz)
-    signal o_sclk : std_logic;
+    signal o_sclk : std_logic := '0';
     --Serial clock counter
     signal sclk_counter : std_logic_vector(2 downto 0) := (others => '1');
     signal prev_sclk_counter : std_logic_vector(2 downto 0) := (others => '1');
@@ -161,14 +161,14 @@ begin
                 spi_whole_sample_count <= 0;
             elsif(spi_whole_sample_count < M_SPI_TRANSFER_LENGTH-1 and this_tvalid = '1' and axis_tready_i = '1') then
                 spi_whole_sample_count <= spi_whole_sample_count + 1;
-            elsif(spi_whole_sample_count = M_SPI_TRANSFER_LENGTH - 1 and this_tlast = '1') then
+            elsif(spi_whole_sample_count = M_SPI_TRANSFER_LENGTH - 1 and this_tlast = '1' and axis_tready_i = '1') then
                 --16th SPI sample transferred on AXI Stream
                 spi_whole_sample_count <= 0;
             end if;
         end if;
     end process transfer_process;
 
-    --TVALID assignment process
+    --TVALID and TLAST assignment process
     axis_tvalid_process : process(clk_i)
     begin
         if(rising_edge(clk_i)) then
