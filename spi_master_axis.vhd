@@ -7,13 +7,15 @@ entity spi_master_axis is
         --TDATA width in bits
         axis_tdata_o_WIDTH : integer := 32;
         --Number of SPI samples in one AXI Stream transfer
-        M_SPI_TRANSFER_LENGTH : integer := 16
+        M_SPI_TRANSFER_LENGTH : integer := 64
     );
     port(
         --Master clock    
         clk_i : in std_logic;
         --Master reset
         rstn_i : in std_logic;
+
+        spi_packet_mode : in std_logic_vector(1 downto 0) := (others => '0');
 
         read_spi_i : in std_logic := '0';
 
@@ -76,7 +78,17 @@ architecture RTL of spi_master_axis is
     --This tlast for use in process
     signal this_tlast : std_logic := '0';
 
+    --SPI packet length chooser 16 / 32 / 64
+    signal spi_packet_mode_length : integer range 0 to 64 := 32;
+
 begin
+
+    with spi_packet_mode select
+        spi_packet_mode_length <=   16 when "00",
+                                    32 when "01",
+                                    64 when "10",
+                                    16 when others;
+
 
     --I/O assignments
     i_miso <= spi_miso_i;
@@ -92,7 +104,7 @@ begin
     sample_pulse <= '1' when (sample_pulse_counter = 50) else '0';
 
     --Set TLAST when last SPI sample is assigned to TDATA
-    this_tlast <= '1' when (spi_whole_sample_count = 15 and this_tvalid = '1') else '0';
+    this_tlast <= '1' when (spi_whole_sample_count = spi_packet_mode_length-1 and this_tvalid = '1') else '0';
 
     --Valid comes as soon as we get the whole sample from SPI
     next_tvalid <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100" and do_spi_sample = '0') else '0';
@@ -159,10 +171,10 @@ begin
         if(rising_edge(clk_i)) then
             if(rstn_i = '0') then
                 spi_whole_sample_count <= 0;
-            elsif(spi_whole_sample_count < M_SPI_TRANSFER_LENGTH-1 and this_tvalid = '1' and axis_tready_i = '1') then
+            elsif(spi_whole_sample_count < spi_packet_mode_length-1 and this_tvalid = '1' and axis_tready_i = '1') then
                 spi_whole_sample_count <= spi_whole_sample_count + 1;
-            elsif(spi_whole_sample_count = M_SPI_TRANSFER_LENGTH - 1 and this_tlast = '1' and axis_tready_i = '1') then
-                --16th SPI sample transferred on AXI Stream
+            elsif(spi_whole_sample_count = spi_packet_mode_length - 1 and this_tlast = '1' and axis_tready_i = '1') then
+                --spi_packet_mode_length SPI sample transferred on AXI Stream
                 spi_whole_sample_count <= 0;
             end if;
         end if;
