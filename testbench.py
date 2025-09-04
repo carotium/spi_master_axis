@@ -87,7 +87,8 @@ async def smoke(tb : Testbench, log: SimLog):
         await tb.axi4stream_mon.wait_for(MonitorEvent.CAPTURE)
     tb.dut.read_spi_i.value = 0
 
-spi_packet_choose = 128 #16 packet length
+#Length of AXI Stream transfer
+spi_packet_choose = 128
 spi_packet_length = spi_packet_choose
 
 @Testbench.testcase(reset_wait_during=2, reset_wait_after=0, timeout=400000, shutdown_delay=10, shutdown_loops=1)
