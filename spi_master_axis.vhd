@@ -78,7 +78,7 @@ architecture RTL of spi_master_axis is
     --This tlast for use in process
     signal this_tlast : std_logic := '0';
 
-    --SPI packet length chooser 16 / 32 / 64
+    --SPI packet length chooser 1-128
     signal spi_packet_mode_length : integer range 0 to 128 := 16;
 
 begin
