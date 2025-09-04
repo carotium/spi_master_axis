@@ -7,7 +7,7 @@ entity spi_master_axis is
         --TDATA width in bits
         axis_tdata_o_WIDTH : integer := 32;
         --Number of SPI samples in one AXI Stream transfer
-        M_SPI_TRANSFER_LENGTH : integer := 64
+        M_SPI_TRANSFER_LENGTH : integer := 128
     );
     port(
         --Master clock    
@@ -15,7 +15,7 @@ entity spi_master_axis is
         --Master reset
         rstn_i : in std_logic;
 
-        spi_packet_mode : in std_logic_vector(1 downto 0) := (others => '0');
+        spi_packet_mode : in std_logic_vector(7 downto 0) := (others => '0');
 
         read_spi_i : in std_logic := '0';
 
@@ -79,15 +79,11 @@ architecture RTL of spi_master_axis is
     signal this_tlast : std_logic := '0';
 
     --SPI packet length chooser 16 / 32 / 64
-    signal spi_packet_mode_length : integer range 0 to 64 := 32;
+    signal spi_packet_mode_length : integer range 0 to 128 := 16;
 
 begin
 
-    with spi_packet_mode select
-        spi_packet_mode_length <=   16 when "00",
-                                    32 when "01",
-                                    64 when "10",
-                                    16 when others;
+    spi_packet_mode_length <= to_integer(unsigned(spi_packet_mode));
 
 
     --I/O assignments
