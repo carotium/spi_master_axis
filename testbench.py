@@ -87,15 +87,8 @@ async def smoke(tb : Testbench, log: SimLog):
         await tb.axi4stream_mon.wait_for(MonitorEvent.CAPTURE)
     tb.dut.read_spi_i.value = 0
 
-spi_packet_choose = 0b00 #16 packet length
-#spi_packet_choose = 0b01 #32 packet length
-#spi_packet_choose = 0b10 #64 packet length
-if(spi_packet_choose == 0b10):
-    spi_packet_length = 64
-elif(spi_packet_choose == 0b01):
-    spi_packet_length = 32
-else:
-    spi_packet_length = 16
+spi_packet_choose = 128 #16 packet length
+spi_packet_length = spi_packet_choose
 
 @Testbench.testcase(reset_wait_during=2, reset_wait_after=0, timeout=400000, shutdown_delay=10, shutdown_loops=1)
 async def backpressure(tb : Testbench, log: SimLog):
