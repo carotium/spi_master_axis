@@ -9,6 +9,8 @@ entity spi_master_axis is
     AXIS_TDATA_O_WIDTH : integer := 32;
     -- Number of SPI samples in one AXI Stream transfer
     M_SPI_TRANSFER_LENGTH : integer := 128;
+    -- Number of bits in single spi sample
+    SPI_PACKET_LENGTH : integer := 16;
     -- Sample pulse lenght for sample frequency of 44.1 kHz
     -- LENGTH        = M_CLK_FREQ / SAMPLE_FREQ
     --               = 100 MHz / 44.1 kHz = 2267.57
@@ -73,9 +75,9 @@ architecture RTL of spi_master_axis is
   -- Begins on sample_pulse rising edge
   signal do_spi_sample : std_logic;
   -- SPI sample, we expect 4 leading 0's and 12 bits of data from PmodMIC3 ADC
-  signal spi_sample : std_logic_vector(15 downto 0);
+  signal spi_sample : std_logic_vector(SPI_PACKET_LENGTH - 1 downto 0);
   -- Bit selector for sample storing
-  signal spi_bit_counter : integer range 0 to 15;
+  signal spi_bit_counter : integer range 0 to SPI_PACKET_LENGTH - 1;
 
   -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
   -- Counter for whole spi sample of 16 bits
@@ -150,7 +152,7 @@ begin
                        '0';
 
   -- High when sclk counter is less than half of its' max value
-  sclk_counter_less_than_half <= '1' when (sclk_counter < sclk_counter_half_value and ss = '0') else
+  sclk_counter_less_than_half <= '1' when (sclk_counter < sclk_counter_half_value) else
                                  '0';
 
   -- High when number of stored spi samples is less than spi_packet_mode_length
@@ -210,7 +212,7 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         spi_sample      <= (others => '0');
-        spi_bit_counter <= 15;
+        spi_bit_counter <= SPI_PACKET_LENGTH - 1;
       elsif (last_high_sclk = '1') then
         if (spi_bit_counter > 0 and do_spi_sample = '1') then
           spi_sample(spi_bit_counter) <= miso;
@@ -218,7 +220,7 @@ begin
         elsif (do_spi_sample = '1' or spi_bit_counter = 0) then
           -- Last bit of sample stored
           spi_sample(spi_bit_counter) <= miso;
-          spi_bit_counter             <= 15;
+          spi_bit_counter             <= SPI_PACKET_LENGTH - 1;
         -- One sample of 16 bits done
         end if;
       end if;
@@ -282,7 +284,7 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         sclk <= '0';
-      elsif (sclk_counter_less_than_half = '1') then
+      elsif (sclk_counter_less_than_half = '1' and ss = '0') then
         sclk <= '1';
       else
         sclk <= '0';
