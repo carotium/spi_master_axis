@@ -103,7 +103,7 @@ async def backpressure(tb : Testbench, log: SimLog):
                 last=int((ind + 1) % spi_packet_length == 0)
             )
         )
-    tb.dut.spi_packet_mode_i.value = spi_packet_choose
+    tb.dut.spi_packet_length_i.value = spi_packet_choose
     tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
     tb.dut.read_spi_i.value = 1
     tb.schedule(axi4stream_backpressure_finite(driver=tb.axi4stream_target, transfers = 65536))
@@ -134,7 +134,7 @@ async def long_not_ready(tb: Testbench, log: SimLog):
     
     #ref_trans = [axi4stream_leftover_sample] + ref_trans
 
-    tb.dut.spi_packet_mode_i.value = spi_packet_choose
+    tb.dut.spi_packet_length_i.value = spi_packet_choose
     tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
     tb.dut.read_spi_i.value = 1
     tb.dut.axis_tready_i.value = 0
