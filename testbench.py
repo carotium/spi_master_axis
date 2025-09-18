@@ -88,7 +88,7 @@ async def smoke(tb : Testbench, log: SimLog):
     tb.dut.read_spi_i.value = 0
 
 #Length of AXI Stream transfer
-spi_packet_choose = 128
+spi_packet_choose = 16
 spi_packet_length = spi_packet_choose
 
 @Testbench.testcase(reset_wait_during=2, reset_wait_after=0, timeout=400000, shutdown_delay=10, shutdown_loops=1)
@@ -119,9 +119,9 @@ async def long_not_ready(tb: Testbench, log: SimLog):
     for ind, data in enumerate(ref_data):
         ref_trans.append(
             AXI4StreamTransfer(
-                index=ind % 16,
+                index=ind % spi_packet_length,
                 data=data,
-                last=int((ind + 1) % 16 == 0)
+                last=int((ind + 1) % spi_packet_length == 0)
             )
         )
 
@@ -134,6 +134,7 @@ async def long_not_ready(tb: Testbench, log: SimLog):
     
     #ref_trans = [axi4stream_leftover_sample] + ref_trans
 
+    tb.dut.spi_packet_mode.value = spi_packet_choose
     tb.scoreboard.channels["axi4stream_mon"].push_reference(*ref_trans)
     tb.dut.read_spi_i.value = 1
     tb.dut.axis_tready_i.value = 0
