@@ -4,10 +4,18 @@ library ieee;
 
 entity spi_master_axis is
   generic (
+
     -- TDATA width in bits
     AXIS_TDATA_O_WIDTH : integer := 32;
     -- Number of SPI samples in one AXI Stream transfer
-    M_SPI_TRANSFER_LENGTH : integer := 128
+    M_SPI_TRANSFER_LENGTH : integer := 128;
+    -- Sample pulse lenght for sample frequency of 44.1 kHz
+    -- LENGTH        = M_CLK_FREQ / SAMPLE_FREQ
+    --               = 100 MHz / 44.1 kHz = 2267.57
+    -- round(LENGTH) = 2268
+    SAMPLE_PULSE_COUNTER_LENGTH : integer
+
+ := 2268
   );
   port (
     -- Master clock
@@ -52,7 +60,7 @@ architecture RTL of spi_master_axis is
 
   -- Sample clock (44.1 kHz)
   signal sample_pulse         : std_logic;
-  signal sample_pulse_counter : integer range 0 to 2268; -- := 0;
+  signal sample_pulse_counter : integer range 0 to SAMPLE_PULSE_COUNTER_LENGTH; -- := 0;
 
   -- Start SPI sample
   -- Begins on sample_pulse rising edge
@@ -62,7 +70,7 @@ architecture RTL of spi_master_axis is
   -- Bit selector for sample storing
   signal spi_bit_counter : integer range 0 to 15; -- := 15;
 
-  -- We want to send an AXIS packet of 16 SPI samples
+  -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
   -- Spi whole sample of 16 bits counter
   signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1; -- := 0;
 
@@ -122,7 +130,7 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         sample_pulse_counter <= 0;
-      elsif (sample_pulse_counter < 2268) then -- number change
+      elsif (sample_pulse_counter < SAMPLE_PULSE_COUNTER_LENGTH) then
         sample_pulse_counter <= sample_pulse_counter + 1;
       else
         sample_pulse_counter <= 0;
