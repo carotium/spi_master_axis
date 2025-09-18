@@ -22,26 +22,26 @@ entity spi_master_axis is
     clk_i : in    std_logic;
     -- Master reset
     rstn_i            : in    std_logic;
-    spi_packet_mode_i : in    std_logic_vector(7 downto 0); -- := (others => '0');
+    spi_packet_mode_i : in    std_logic_vector(7 downto 0);
 
-    read_spi_i : in    std_logic; -- := '0';
+    read_spi_i : in    std_logic;
 
     -- Master out serial clock
-    spi_sclk_o : out   std_logic; -- := '0';
+    spi_sclk_o : out   std_logic;
     -- Master in miso
-    spi_miso_i : in    std_logic; -- := '0';
+    spi_miso_i : in    std_logic;
     -- Master out slave select
-    spi_ss_o : out   std_logic; -- := '1';
+    spi_ss_o : out   std_logic;
 
     -- AXIS Master ports
     -- Master valid out
-    axis_tvalid_o : out   std_logic; -- := '0';
+    axis_tvalid_o : out   std_logic;
     -- Master ready out
     axis_tready_i : in    std_logic;
     -- Master data out
-    axis_tdata_o : out   std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0); -- := (others => '0');
+    axis_tdata_o : out   std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0);
     -- Master last packet out
-    axis_tlast_o : out   std_logic -- := '0'
+    axis_tlast_o : out   std_logic
   );
 end entity spi_master_axis;
 
@@ -49,44 +49,44 @@ architecture RTL of spi_master_axis is
 
   -- Internal signal declaration
   -- Slave select
-  signal ss : std_logic; -- := '1';
+  signal ss : std_logic;
   -- Master input miso
   signal miso : std_logic;
   -- Master output serial clock (12.5 MHz)
-  signal sclk : std_logic; -- := '0';
+  signal sclk : std_logic;
   -- Serial clock counter
-  signal sclk_counter      : std_logic_vector(2 downto 0); -- := (others => '1');
-  signal prev_sclk_counter : std_logic_vector(2 downto 0); -- := (others => '1');
+  signal sclk_counter      : std_logic_vector(2 downto 0);
+  signal prev_sclk_counter : std_logic_vector(2 downto 0);
 
   -- Sample clock (44.1 kHz)
   signal sample_pulse         : std_logic;
-  signal sample_pulse_counter : integer range 0 to SAMPLE_PULSE_COUNTER_LENGTH; -- := 0;
+  signal sample_pulse_counter : integer range 0 to SAMPLE_PULSE_COUNTER_LENGTH;
 
   -- Start SPI sample
   -- Begins on sample_pulse rising edge
-  signal do_spi_sample : std_logic; -- := '0';
+  signal do_spi_sample : std_logic;
   -- SPI sample, we expect 4 leading 0's and 12 bits of data from PmodMIC3 ADC
-  signal spi_sample : std_logic_vector(15 downto 0); -- := (others => '0');
+  signal spi_sample : std_logic_vector(15 downto 0);
   -- Bit selector for sample storing
-  signal spi_bit_counter : integer range 0 to 15; -- := 15;
+  signal spi_bit_counter : integer range 0 to 15; 
 
   -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
   -- Spi whole sample of 16 bits counter
-  signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1; -- := 0;
+  signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1;
 
   -- This tvalid for use in process
-  signal this_tvalid : std_logic; -- := '0';
+  signal this_tvalid : std_logic;
   -- Next tvalid for assignment in a process
-  signal next_tvalid : std_logic; -- := '0';
+  signal next_tvalid : std_logic;
   -- This tdata for use in process
-  signal this_tdata : std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0); -- := (others => '0');
+  signal this_tdata : std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0);
   -- Next tdata for assignment in a process
-  signal next_tdata : std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0); -- := (others => '0');
+  signal next_tdata : std_logic_vector(AXIS_TDATA_O_WIDTH - 1 downto 0);
   -- This tlast for use in process
-  signal this_tlast : std_logic; -- := '0';
+  signal this_tlast : std_logic;
 
   -- SPI packet length chooser 1-128
-  signal spi_packet_mode_length : integer range 0 to 128; -- := 16;
+  signal spi_packet_mode_length : integer range 0 to 128;
 
 begin
 
