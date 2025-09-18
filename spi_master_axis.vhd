@@ -13,17 +13,22 @@ entity spi_master_axis is
     -- LENGTH        = M_CLK_FREQ / SAMPLE_FREQ
     --               = 100 MHz / 44.1 kHz = 2267.57
     -- round(LENGTH) = 2268
-    SAMPLE_PULSE_COUNTER_LENGTH : integer := 2268
+    SAMPLE_PULSE_COUNTER_LENGTH : integer := 2268;
+    -- Width of sclk counter for master clock division
+    -- sclk_freq = m_aclk_freq / 2^(SCLK_COUNTER_WIDTH)
+    SCLK_COUNTER_WIDTH : integer := 3
   );
   port (
     -- Master clock
     clk_i : in    std_logic;
     -- Master reset
     rstn_i            : in    std_logic;
-    spi_packet_mode_i : in    std_logic_vector(7 downto 0);
 
+    -- SPI ports
+    -- AXI Stream packet length
+    spi_packet_length_i : in    std_logic_vector(7 downto 0);
+    -- cocotb stop switch
     read_spi_i : in    std_logic;
-
     -- Master out serial clock
     spi_sclk_o : out   std_logic;
     -- Master in miso
@@ -45,7 +50,6 @@ end entity spi_master_axis;
 
 architecture RTL of spi_master_axis is
 
-  -- Internal signal declaration
   -- Slave select
   signal ss : std_logic;
   -- Master input miso
@@ -53,18 +57,19 @@ architecture RTL of spi_master_axis is
   -- Master output serial clock (12.5 MHz)
   signal sclk : std_logic;
   -- Serial clock counter
-  signal sclk_counter      : std_logic_vector(2 downto 0);
-  signal prev_sclk_counter : std_logic_vector(2 downto 0);
-
+  signal sclk_counter      : std_logic_vector(SCLK_COUNTER_WIDTH - 1 downto 0);
+  signal prev_sclk_counter : std_logic_vector(SCLK_COUNTER_WIDTH - 1 downto 0);
+  -- Sclk counter conditions
   signal last_high_sclk              : std_logic;
   signal sclk_falling_edge           : std_logic;
   signal sclk_counter_less_than_half : std_logic;
+  -- Sclk counter half value
+  signal sclk_counter_half_value : std_logic_vector(SCLK_COUNTER_WIDTH - 1 downto 0);
 
   -- Sample clock (44.1 kHz)
   signal sample_pulse         : std_logic;
   signal sample_pulse_counter : integer range 0 to SAMPLE_PULSE_COUNTER_LENGTH;
 
-  -- Start SPI sample
   -- Begins on sample_pulse rising edge
   signal do_spi_sample : std_logic;
   -- SPI sample, we expect 4 leading 0's and 12 bits of data from PmodMIC3 ADC
@@ -73,8 +78,11 @@ architecture RTL of spi_master_axis is
   signal spi_bit_counter : integer range 0 to 15;
 
   -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
-  -- Spi whole sample of 16 bits counter
+  -- Counter for whole spi sample of 16 bits
   signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1;
+  -- Spi whole sample count conditions
+  signal do_increment_sample_counter : std_logic;
+  signal do_reset_sample_counter                 : std_logic;
 
   -- This tvalid for use in process
   signal this_tvalid : std_logic;
@@ -87,12 +95,13 @@ architecture RTL of spi_master_axis is
   -- This tlast for use in process
   signal this_tlast : std_logic;
 
-  -- SPI packet length chooser 1-128
-  signal spi_packet_mode_length : integer range 0 to 128;
+  -- SPI packet length chooser from 0 to M_SPI_TRANSFER_LENGTH
+  signal spi_packet_mode_length : integer range 0 to M_SPI_TRANSFER_LENGTH;
 
 begin
 
-  spi_packet_mode_length <= to_integer(unsigned(spi_packet_mode_i));
+  -- Number of spi packets in one AXIS transfer
+  spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
 
   -- I/O assignments
   miso       <= spi_miso_i;
@@ -114,7 +123,7 @@ begin
                 '0';
 
   -- Valid comes as soon as we get the whole sample from SPI
-  next_tvalid <= '1' when (sclk_falling_edge = '1' and do_spi_sample = '0') else
+  next_tvalid <= '1' when (sclk_falling_edge = '1') else
                  '0';
 
   -- Send spi_sample as soon as it is sampled
@@ -125,14 +134,39 @@ begin
   ss <= '0' when (do_spi_sample = '1' or sample_pulse = '1') else
         '1';
 
-  last_high_sclk <= '1' when (sclk_counter = "100" and prev_sclk_counter = "011") else
+  -- Sclk counter half value is only with MSB set and others cleared
+  sclk_counter_half_value(SCLK_COUNTER_WIDTH - 1)          <= '1';
+  sclk_counter_half_value(SCLK_COUNTER_WIDTH - 2 downto 0) <= (others => '0');
+
+  -- Last rising edge of master clk where sclk is '1'
+  last_high_sclk <= '1' when (sclk_counter = sclk_counter_half_value
+                               and prev_sclk_counter = std_logic_vector(unsigned(sclk_counter_half_value) - 1)) else
                     '0';
 
-  sclk_falling_edge <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100") else
+  -- Sclk falling edge of last bit transferred over SPI
+  sclk_falling_edge <= '1' when (sclk_counter = std_logic_vector(unsigned(sclk_counter_half_value) + 1)
+                                  and prev_sclk_counter = sclk_counter_half_value
+                                  and do_spi_sample = '0') else
                        '0';
 
-  sclk_counter_less_than_half <= '1' when (sclk_counter < "100" and ss = '0') else
+  -- High when sclk counter is less than half of its' max value
+  sclk_counter_less_than_half <= '1' when (sclk_counter < sclk_counter_half_value and ss = '0') else
                                  '0';
+
+  -- High when number of stored spi samples is less than spi_packet_mode_length
+  --           and transfer is in progress (tvalid %% tready)
+  do_increment_sample_counter <= '1' when (spi_whole_sample_count < spi_packet_mode_length - 1
+                                            and this_tvalid = '1'
+                                            and axis_tready_i = '1') else
+                                 '0';
+
+  -- High when last spi sample is stored (according to spi_packet_mode_length)
+  --           and is the last transfer
+  --           and DMA is ready
+  do_reset_sample_counter <= '1' when (spi_whole_sample_count = spi_packet_mode_length - 1
+                            and this_tlast = '1'
+                            and axis_tready_i = '1') else
+                 '0';
 
   -- Sample clock counter process
   sample_pulse_process : process (clk_i) is
@@ -198,10 +232,9 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         spi_whole_sample_count <= 0;
-      -- tvalid && tready -> transfer / fire signal
-      elsif (spi_whole_sample_count < spi_packet_mode_length - 1 and this_tvalid = '1' and axis_tready_i = '1') then
+      elsif (do_increment_sample_counter = '1') then
         spi_whole_sample_count <= spi_whole_sample_count + 1;
-      elsif (spi_whole_sample_count = spi_packet_mode_length - 1 and this_tlast = '1' and axis_tready_i = '1') then
+      elsif (do_reset_sample_counter = '1') then
         -- spi_packet_mode_length SPI sample transferred on AXI Stream
         spi_whole_sample_count <= 0;
       end if;
@@ -217,7 +250,8 @@ begin
       if (rstn_i = '0') then
         this_tvalid <= '0';
       elsif (this_tvalid = '0' or axis_tready_i = '1') then
-        -- next_tvalid change name
+        -- Assign next_tvalid only when not valid (not skipping transfers)
+        --                              or DMA is ready (send next transfer if available)
         this_tvalid <= next_tvalid;
       end if;
     end if;
@@ -232,6 +266,9 @@ begin
       if (rstn_i = '0') then
         this_tdata <= (others => '0');
       elsif (this_tvalid = '0' or axis_tready_i = '1' or next_tvalid = '1') then
+        -- Assign next_tdata only when not valid (not skipping transfers)
+        --                             or DMA is ready (send next transfer if available)
+        --                             or next_tvalid (next transfer is available)
         this_tdata <= next_tdata;
       end if;
     end if;
