@@ -6,3 +6,4 @@ venv/
 results.xml
 .vscode/
 configuration.yaml
+spi_master_axis.vhd.bak
