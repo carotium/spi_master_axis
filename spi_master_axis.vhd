@@ -22,7 +22,7 @@ entity spi_master_axis is
     -- Master clock
     clk_i : in    std_logic;
     -- Master reset
-    rstn_i            : in    std_logic;
+    rstn_i : in    std_logic;
 
     -- SPI ports
     -- AXI Stream packet length
@@ -82,7 +82,7 @@ architecture RTL of spi_master_axis is
   signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1;
   -- Spi whole sample count conditions
   signal do_increment_sample_counter : std_logic;
-  signal do_reset_sample_counter                 : std_logic;
+  signal do_reset_sample_counter     : std_logic;
 
   -- This tvalid for use in process
   signal this_tvalid : std_logic;
@@ -164,9 +164,9 @@ begin
   --           and is the last transfer
   --           and DMA is ready
   do_reset_sample_counter <= '1' when (spi_whole_sample_count = spi_packet_mode_length - 1
-                            and this_tlast = '1'
-                            and axis_tready_i = '1') else
-                 '0';
+                                        and this_tlast = '1'
+                                        and axis_tready_i = '1') else
+                             '0';
 
   -- Sample clock counter process
   sample_pulse_process : process (clk_i) is
