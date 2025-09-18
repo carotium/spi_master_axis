@@ -56,6 +56,10 @@ architecture RTL of spi_master_axis is
   signal sclk_counter      : std_logic_vector(2 downto 0);
   signal prev_sclk_counter : std_logic_vector(2 downto 0);
 
+  signal last_high_sclk              : std_logic;
+  signal sclk_falling_edge           : std_logic;
+  signal sclk_counter_less_than_half : std_logic;
+
   -- Sample clock (44.1 kHz)
   signal sample_pulse         : std_logic;
   signal sample_pulse_counter : integer range 0 to SAMPLE_PULSE_COUNTER_LENGTH;
@@ -110,7 +114,7 @@ begin
                 '0';
 
   -- Valid comes as soon as we get the whole sample from SPI
-  next_tvalid <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100" and do_spi_sample = '0') else
+  next_tvalid <= '1' when (sclk_falling_edge = '1' and do_spi_sample = '0') else
                  '0';
 
   -- Send spi_sample as soon as it is sampled
@@ -120,6 +124,15 @@ begin
   -- Slave select goes low when sample pulse (44.1 kHz) and do_spi_sample (126 clk cycles for SPI sample)
   ss <= '0' when (do_spi_sample = '1' or sample_pulse = '1') else
         '1';
+
+  last_high_sclk <= '1' when (sclk_counter = "100" and prev_sclk_counter = "011") else
+                    '0';
+
+  sclk_falling_edge <= '1' when (sclk_counter = "101" and prev_sclk_counter = "100") else
+                       '0';
+
+  sclk_counter_less_than_half <= '1' when (sclk_counter < "100" and ss = '0') else
+                                 '0';
 
   -- Sample clock counter process
   sample_pulse_process : process (clk_i) is
@@ -148,8 +161,7 @@ begin
         if (sample_pulse = '1') then
           do_spi_sample <= '1';
         -- add configurability for other clk
-        elsif (spi_bit_counter = 0 and sclk_counter = "100" and prev_sclk_counter = "011") then
-          -- rising edge detection
+        elsif (spi_bit_counter = 0 and last_high_sclk = '1') then
           do_spi_sample <= '0';
         end if;
       end if;
@@ -165,8 +177,7 @@ begin
       if (rstn_i = '0') then
         spi_sample      <= (others => '0');
         spi_bit_counter <= 15;
-      -- change condition to combinatorial
-      elsif (sclk_counter = "100" and prev_sclk_counter = "011") then
+      elsif (last_high_sclk = '1') then
         if (spi_bit_counter > 0 and do_spi_sample = '1') then
           spi_sample(spi_bit_counter) <= miso;
           spi_bit_counter             <= spi_bit_counter - 1;
@@ -220,8 +231,6 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         this_tdata <= (others => '0');
-      -- elsif(next_tvalid = '0') then
-      --        this_tdata <= (others => '0');
       elsif (this_tvalid = '0' or axis_tready_i = '1' or next_tvalid = '1') then
         this_tdata <= next_tdata;
       end if;
@@ -236,8 +245,7 @@ begin
     if (rising_edge(clk_i)) then
       if (rstn_i = '0') then
         sclk <= '0';
-      -- add constant
-      elsif (sclk_counter < "100" and ss = '0') then
+      elsif (sclk_counter_less_than_half = '1') then
         sclk <= '1';
       else
         sclk <= '0';
