@@ -13,9 +13,7 @@ entity spi_master_axis is
     -- LENGTH        = M_CLK_FREQ / SAMPLE_FREQ
     --               = 100 MHz / 44.1 kHz = 2267.57
     -- round(LENGTH) = 2268
-    SAMPLE_PULSE_COUNTER_LENGTH : integer
-
- := 2268
+    SAMPLE_PULSE_COUNTER_LENGTH : integer := 2268
   );
   port (
     -- Master clock
@@ -68,7 +66,7 @@ architecture RTL of spi_master_axis is
   -- SPI sample, we expect 4 leading 0's and 12 bits of data from PmodMIC3 ADC
   signal spi_sample : std_logic_vector(15 downto 0);
   -- Bit selector for sample storing
-  signal spi_bit_counter : integer range 0 to 15; 
+  signal spi_bit_counter : integer range 0 to 15;
 
   -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
   -- Spi whole sample of 16 bits counter
