@@ -5,3 +5,4 @@ venv/
 *.vcd
 results.xml
 .vscode/
+configuration.yaml
