@@ -36,34 +36,73 @@ proc reportCriticalPaths { fileName } {
   puts "CSV file $fileName has been created.\n"
   return 0
 }; # End PROC
-
-
+#
+#
 # Run 'vivado -mode batch -source design.tcl' 
-
+#
 # Define input and output directory area
-
+#
 set script_path         [ file dirname [ file normalize [ info script] ] ]
 set project_root_dir    $script_path/../../.
 set source_dir          $project_root_dir/.
-
-set_part xc7z020clg484-1
-
+#
+# Genesys2 board 
+set_part xc7k325tffg900-2
+# Zedboard
+#set_part xc7z020clg484-1
+#
 set output_dir $script_path/output/.
 file mkdir $output_dir
-
+#
 # Setup design sources and constraints
-
+#
 read_vhdl   [ glob $source_dir/spi_master_axis.vhd]
-read_xdc    $script_path/zedboard.xdc
-
-# Run synthesis
+#read_xdc    $script_path/zedboard.xdc
+read_xdc    $script_path/genesys.xdc
+#
+# Run synthesis, write design checkpoint, report timing
+# and uzilization estimates
+#
 synth_design            -top    spi_master_axis
 write_checkpoint        -force  $output_dir/post_synth
 report_timing_summary   -file   $output_dir/post_synth_timing_summary.rpt
-report_power            -file   $output_dir/post_synth_power.rpt
+#report_power            -file   $output_dir/post_synth_power.rpt
 report_utilization      -file   $output_dir/post_synth_util.rpt
-
+#
+# Report critical timing paths
+#
 reportCriticalPaths $output_dir/post_synth_crit_path_report.csv
-
-write_vhdl  -force  $output_dir/impl_netlist.vhdl
-write_edif  -force  $output_dir/impl_netlist.edif
+#
+# Run logic optimization, placement and physical logic implementation,
+# write design checkpoint, report utilization and timing estimates.
+#
+opt_design
+reportCriticalPaths $output_dir/post_opt_critpath_report.csv
+place_design
+report_clock_utilization -file $output_dir/clock_util.rpt
+#
+# Optionally run optimization if there are timing violations after placement
+if {[get_property SLACK [get_timing_paths -max_paths 1 -nworst 1 -setup]] < 0} {
+    puts "Found setup timing violations => running physical optimization"
+    phys_opt_design
+}
+write_checkpoint        -force  $output_dir/post_place.dcp
+report_utilization      -file   $output_dir/post_place_util.rpt
+report_timing_summary   -file   $output_dir/post_place_timing_summary.rpt
+#
+# Run the router, write the post-route design checkpoint, report the routing
+# status, report timing, power and DRC, and finally save the VHDL netlist.
+#
+route_design
+write_checkpoint            -force  $output_dir/post_route.dcp
+report_route_status         -file   $output_dir/post_route_status.rpt
+report_timing_summary       -file   $output_dir/post_route_timing_summary.rpt
+report_power                -file   $output_dir/post_route_power.rpt
+report_drc                  -file   $output_dir/post_imp_drc.rpt
+write_verilog               -force  $output_dir/impl_netlist.vhdl -mode timesim -sdf_anno true
+#
+write_edif                  -force  $output_dir/impl_netlist.edif
+#
+# Generate a bitstream
+#
+write_bitstream             -force  $output_dir/spi_master_axis.bit
