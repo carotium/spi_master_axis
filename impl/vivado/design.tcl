@@ -4,6 +4,8 @@ set script_path [ file dirname [ file normalize [ info script] ] ]
 set project_root_dir $script_path/../../.
 set source_dir $project_root_dir/.
 
+set_part xc7z020clg484-1
+
 set output_dir $script_path/output/.
 file mkdir $output_dir
 
