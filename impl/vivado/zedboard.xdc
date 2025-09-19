@@ -1,3 +1,5 @@
+create_clock -period 10.000 -name clk_i -waveform {0.000 5.000}
+
 set_property PACKAGE_PIN R6 [get_ports spi_ss_o]
 set_property PACKAGE_PIN T4 [get_ports spi_miso_i]
 set_property PACKAGE_PIN U4 [get_ports spi_sclk_o]
