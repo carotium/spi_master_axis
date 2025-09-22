@@ -56,6 +56,7 @@ file mkdir $output_dir
 #
 # Setup design sources and constraints
 #
+read_vhdl   [glob $source_dir/spi_master_wrapper.vhd]
 read_vhdl   [ glob $source_dir/spi_master_axis.vhd]
 #read_xdc    $script_path/zedboard.xdc
 read_xdc    $script_path/genesys.xdc
@@ -63,7 +64,7 @@ read_xdc    $script_path/genesys.xdc
 # Run synthesis, write design checkpoint, report timing
 # and uzilization estimates
 #
-synth_design            -top    spi_master_axis
+synth_design            -top    spi_master_wrapper
 write_checkpoint        -force  $output_dir/post_synth
 report_timing_summary   -file   $output_dir/post_synth_timing_summary.rpt
 #report_power            -file   $output_dir/post_synth_power.rpt
@@ -105,4 +106,4 @@ write_edif                  -force  $output_dir/impl_netlist.edif
 #
 # Generate a bitstream
 #
-write_bitstream             -force  $output_dir/spi_master_axis.bit
+write_bitstream             -force  $output_dir/spi_master.bit
