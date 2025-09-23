@@ -92,10 +92,14 @@ architecture STRUCTURE of spi_master_wrapper is
 
   signal m_clk_200M : std_logic;
 
+  signal axis_tvalid_int : std_logic;
+
 begin
 
   m_clk_100M_o <= clk_div;
   m_rstn_int   <= not m_rst_i;
+
+  m_axis_tvalid_o <= axis_tvalid_int;
 
   -- IBUFDS : Differential Input Buffer
   ibufds_inst : component ibufds
@@ -127,7 +131,7 @@ begin
       spi_miso_i          => m_spi_miso_i,
       spi_ss_o            => m_spi_ss_o,
 
-      axis_tvalid_o => m_axis_tvalid_o,
+      axis_tvalid_o => axis_tvalid_int,
       axis_tready_i => '1',
       axis_tdata_o  => spi_data,
       axis_tlast_o  => m_axis_tlast_o
@@ -139,8 +143,8 @@ begin
     if (rising_edge(m_clk_200M)) then
       if (m_rst_i = '1') then
         m_read_data_o <= (others => '0');
-      elsif (m_read_to_led_i = '1') then
-        m_read_data_o <= spi_data(11 downto 4);
+      elsif (m_read_to_led_i = '1' and axis_tvalid_int = '1') then
+        m_read_data_o <= spi_data(7 downto 0);
       end if;
     end if;
 
