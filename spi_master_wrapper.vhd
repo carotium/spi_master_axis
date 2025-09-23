@@ -24,7 +24,7 @@ entity spi_master_wrapper is
   );
   port (
     -- Master clock input
-    -- m_clk_200M : in    std_logic;
+    -- m_clk_200m : in    std_logic;
     sysclk_p_i : in    std_logic;
     sysclk_n_i : in    std_logic;
     -- Master reset input
@@ -54,7 +54,7 @@ entity spi_master_wrapper is
 
     m_read_data_o   : out   std_logic_vector(7 downto 0);
     m_read_to_led_i : in    std_logic;
-    m_clk_100M_o    : out   std_logic
+    m_clk_100m_o    : out   std_logic
   );
 end entity spi_master_wrapper;
 
@@ -90,13 +90,13 @@ architecture STRUCTURE of spi_master_wrapper is
 
   signal m_rstn_int : std_logic;
 
-  signal m_clk_200M : std_logic;
+  signal m_clk_200m : std_logic;
 
   signal axis_tvalid_int : std_logic;
 
 begin
 
-  m_clk_100M_o <= clk_div;
+  m_clk_100m_o <= clk_div;
   m_rstn_int   <= not m_rst_i;
 
   m_axis_tvalid_o <= axis_tvalid_int;
@@ -109,7 +109,7 @@ begin
       iostandard   => "DEFAULT"
     )
     port map (
-      o  => m_clk_200M,
+      o  => m_clk_200m,
       i  => sysclk_p_i,
       ib => sysclk_n_i
     );
@@ -137,10 +137,10 @@ begin
       axis_tlast_o  => m_axis_tlast_o
     );
 
-  spi_read_data_process : process (m_clk_200M) is
+  spi_read_data_process : process (m_clk_200m) is
   begin
 
-    if (rising_edge(m_clk_200M)) then
+    if (rising_edge(m_clk_200m)) then
       if (m_rst_i = '1') then
         m_read_data_o <= (others => '0');
       elsif (m_read_to_led_i = '1' and axis_tvalid_int = '1') then
@@ -150,10 +150,10 @@ begin
 
   end process spi_read_data_process;
 
-  clk_test_process : process (m_clk_200M) is
+  clk_test_process : process (m_clk_200m) is
   begin
 
-    if (rising_edge(m_clk_200M)) then
+    if (rising_edge(m_clk_200m)) then
       if (m_rst_i = '1') then
         clk_div <= '0';
       else
