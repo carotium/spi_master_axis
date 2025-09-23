@@ -102,7 +102,7 @@ architecture RTL of spi_master_axis is
 begin
 
   -- Number of spi packets in one AXIS transfer
-  --spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
+  -- spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
   spi_packet_mode_length <= 16;
 
   -- I/O assignments
