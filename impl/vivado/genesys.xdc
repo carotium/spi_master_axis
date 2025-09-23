@@ -13,7 +13,7 @@ set_property -dict { PACKAGE_PIN AD12  IOSTANDARD LVDS     } [get_ports { sysclk
 
 create_clock -period 5.000 [get_ports sysclk_p_i]
 
-create_generated_clock -name master_clk_100M -divide_by 2 -source [get_ports {m_clk_200M}]
+#create_generated_clock -name master_clk_100M -divide_by 2 -source [get_ports {m_clk_200M}] [get_ports {clk_div}]
 
 ## Buttons
 set_property -dict { PACKAGE_PIN E18   IOSTANDARD LVCMOS12 } [get_ports { m_read_to_led_i }]; #IO_25_17 Sch=btnc
@@ -151,7 +151,7 @@ set_property -dict { PACKAGE_PIN P27   IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 #set_property -dict { PACKAGE_PIN AG17  IOSTANDARD LVCMOS18 } [get_ports { oled_vdd }]; #IO_L12N_T1_MRCC_32 Sch=oled_vdd
 
 ## PMOD Header JA
-set_property -dict { PACKAGE_PIN U27   IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L13P_T2_MRCC_14 Sch=ja_p[1]
+#set_property -dict { PACKAGE_PIN U27   IOSTANDARD LVCMOS33 } [get_ports { ja[0] }]; #IO_L13P_T2_MRCC_14 Sch=ja_p[1]
 #set_property -dict { PACKAGE_PIN U28   IOSTANDARD LVCMOS33 } [get_ports { ja[1] }]; #IO_L13N_T2_MRCC_14 Sch=ja_n[1]
 #set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 } [get_ports { ja[2] }]; #IO_L12P_T1_MRCC_14 Sch=ja_p[2]
 #set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 } [get_ports { ja[3] }]; #IO_L12N_T1_MRCC_14 Sch=ja_n[2]
