@@ -151,14 +151,14 @@ set_property -dict { PACKAGE_PIN P27   IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 #set_property -dict { PACKAGE_PIN AG17  IOSTANDARD LVCMOS18 } [get_ports { oled_vdd }]; #IO_L12N_T1_MRCC_32 Sch=oled_vdd
 
 ## PMOD Header JA
-#set_property -dict { PACKAGE_PIN U27   IOSTANDARD LVCMOS33 } [get_ports { ja[0] }]; #IO_L13P_T2_MRCC_14 Sch=ja_p[1]
+set_property -dict { PACKAGE_PIN U27   IOSTANDARD LVCMOS33 } [get_ports { m_axis_tvalid_o }]; #IO_L13P_T2_MRCC_14 Sch=ja_p[1]
 #set_property -dict { PACKAGE_PIN U28   IOSTANDARD LVCMOS33 } [get_ports { ja[1] }]; #IO_L13N_T2_MRCC_14 Sch=ja_n[1]
 #set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 } [get_ports { ja[2] }]; #IO_L12P_T1_MRCC_14 Sch=ja_p[2]
-#set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 } [get_ports { ja[3] }]; #IO_L12N_T1_MRCC_14 Sch=ja_n[2]
-#set_property -dict { PACKAGE_PIN T22   IOSTANDARD LVCMOS33 } [get_ports { ja[4] }]; #IO_L5P_T0_D06_14 Sch=ja_p[3]
+set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L12N_T1_MRCC_14 Sch=ja_n[2]
+set_property -dict { PACKAGE_PIN T22   IOSTANDARD LVCMOS33 } [get_ports { m_spi_ss_o }]; #IO_L5P_T0_D06_14 Sch=ja_p[3]
 #set_property -dict { PACKAGE_PIN T23   IOSTANDARD LVCMOS33 } [get_ports { ja[5] }]; #IO_L5N_T0_D07_14 Sch=ja_n[3]
-#set_property -dict { PACKAGE_PIN T20   IOSTANDARD LVCMOS33 } [get_ports { ja[6] }]; #IO_L4P_T0_D04_14 Sch=ja_p[4]
-#set_property -dict { PACKAGE_PIN T21   IOSTANDARD LVCMOS33 } [get_ports { ja[7] }]; #IO_L4N_T0_D05_14 Sch=ja_n[4]
+set_property -dict { PACKAGE_PIN T20   IOSTANDARD LVCMOS33 } [get_ports { m_spi_miso_i }]; #IO_L4P_T0_D04_14 Sch=ja_p[4]
+set_property -dict { PACKAGE_PIN T21   IOSTANDARD LVCMOS33 } [get_ports { m_spi_sclk_o }]; #IO_L4N_T0_D05_14 Sch=ja_n[4]
 
 ## PMOD Header JB
 #set_property -dict { PACKAGE_PIN V29   IOSTANDARD LVCMOS33 } [get_ports { jb[0] }]; #IO_L17P_T2_A14_D30_14 Sch=jb_p[1]
@@ -171,14 +171,14 @@ set_property -dict { PACKAGE_PIN P27   IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 #set_property -dict { PACKAGE_PIN U23   IOSTANDARD LVCMOS33 } [get_ports { jb[7] }]; #IO_L21N_T3_DQS_A06_D22_14 Sch=jb_n[4]
 
 ## PMOD Header JC
-set_property -dict { PACKAGE_PIN AC26  IOSTANDARD LVCMOS33 } [get_ports { m_axis_tvalid_o }]; #IO_L19P_T3_13 Sch=jc[1]
+#set_property -dict { PACKAGE_PIN AC26  IOSTANDARD LVCMOS33 } [get_ports { jc[0] }]; #IO_L19P_T3_13 Sch=jc[1]
 set_property -dict { PACKAGE_PIN AJ27  IOSTANDARD LVCMOS33 } [get_ports { m_axis_tlast_o }]; #IO_L20P_T3_13 Sch=jc[2]
 #set_property -dict { PACKAGE_PIN AH30  IOSTANDARD LVCMOS33 } [get_ports { jc[2] }]; #IO_L18N_T2_13 Sch=jc[3]
-set_property -dict { PACKAGE_PIN AK29  IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L15P_T2_DQS_13 Sch=jc[4]
-set_property -dict { PACKAGE_PIN AD26  IOSTANDARD LVCMOS33 } [get_ports { m_spi_ss_o }]; #IO_L19N_T3_VREF_13 Sch=jc[7]
+#set_property -dict { PACKAGE_PIN AK29  IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L15P_T2_DQS_13 Sch=jc[4]
+#set_property -dict { PACKAGE_PIN AD26  IOSTANDARD LVCMOS33 } [get_ports { m_spi_ss_o }]; #IO_L19N_T3_VREF_13 Sch=jc[7]
 #set_property -dict { PACKAGE_PIN AG30  IOSTANDARD LVCMOS33 } [get_ports { jc[5] }]; #IO_L18P_T2_13 Sch=jc[8]
-set_property -dict { PACKAGE_PIN AK30  IOSTANDARD LVCMOS33 } [get_ports { m_spi_miso_i }]; #IO_L15N_T2_DQS_13 Sch=jc[9]
-set_property -dict { PACKAGE_PIN AK28  IOSTANDARD LVCMOS33 } [get_ports { m_spi_sclk_o }]; #IO_L20N_T3_13 Sch=jc[10]
+#set_property -dict { PACKAGE_PIN AK30  IOSTANDARD LVCMOS33 } [get_ports { m_spi_miso_i }]; #IO_L15N_T2_DQS_13 Sch=jc[9]
+#set_property -dict { PACKAGE_PIN AK28  IOSTANDARD LVCMOS33 } [get_ports { m_spi_sclk_o }]; #IO_L20N_T3_13 Sch=jc[10]
 
 ## PMOD Header JD
 #set_property -dict { PACKAGE_PIN V27   IOSTANDARD LVCMOS33 } [get_ports { jd[0] }]; #IO_L16N_T2_A15_D31_14 Sch=jd[1]
@@ -443,4 +443,5 @@ set_property -dict { PACKAGE_PIN AK28  IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 #set_property -dict { PACKAGE_PIN AA17  IOSTANDARD LVCMOS18 } [get_ports { USB_OTG_STP }]; #IO_L23P_T3_32 Sch=usb_otg_stp
 #set_property -dict { PACKAGE_PIN AF16  IOSTANDARD LVCMOS18 } [get_ports { USB_OTG_VBUSOC }]; #IO_L6N_T0_VREF_32 Sch=usb_otg_vbusoc
 
-set_property CFGBVS GND [current_design]
+set_property CFGBVS VCCO [current_design]
+set_property CONFIG_VOLTAGE 3.3 [current_design]
