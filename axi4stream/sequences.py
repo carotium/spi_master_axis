@@ -38,7 +38,7 @@ async def axi4stream_backpressure_finite(
     transfers: int,
     min_interval: int = 1,
     max_interval: int = 10,
-    backpressure: float = 0.5,
+    backpressure: float = 0.9,
 ):
     for _ in range(transfers):
         driver.enqueue(
@@ -47,6 +47,23 @@ async def axi4stream_backpressure_finite(
                     (True, False), weights=(1.0 - backpressure, backpressure), k=1
                 )[0],
                 cycles=ctx.random.randint(min_interval, max_interval),
+            )
+        )
+        await driver.wait_for(DriverEvent.PRE_DRIVE)
+
+@forastero.sequence(auto_lock=True)
+@forastero.requires("driver", AXI4StreamTarget)
+async def axi4stream_backpressure_list(
+    ctx: SeqContext,
+    driver: SeqProxy[AXI4StreamTarget],
+    transfers: list[bool],
+    cycles: int = 1,
+):
+    for transfer in transfers:
+        driver.enqueue(
+            AXI4StreamBackpressure(
+                ready=transfer,
+                cycles=cycles,
             )
         )
         await driver.wait_for(DriverEvent.PRE_DRIVE)
