@@ -4,11 +4,10 @@ library ieee;
 
 entity spi_master_axis is
   generic (
-
     -- TDATA width in bits
     AXIS_TDATA_O_WIDTH : integer := 32;
     -- Number of SPI samples in one AXI Stream transfer
-    M_SPI_TRANSFER_LENGTH : integer := 128;
+    SPI_TRANSFER_LENGTH : integer := 128;
     -- Number of bits in single spi sample
     SPI_PACKET_LENGTH : integer := 16;
     -- Sample pulse lenght for sample frequency of 44.1 kHz
@@ -18,7 +17,7 @@ entity spi_master_axis is
     SAMPLE_PULSE_COUNTER_LENGTH : integer := 2268;
     -- Width of sclk counter for master clock division
     -- sclk_freq = m_aclk_freq / 2^(SCLK_COUNTER_WIDTH)
-    SCLK_COUNTER_WIDTH : integer := 3
+    SCLK_COUNTER_WIDTH : integer := 4
   );
   port (
     -- Master clock
@@ -79,9 +78,9 @@ architecture RTL of spi_master_axis is
   -- Bit selector for sample storing
   signal spi_bit_counter : integer range 0 to SPI_PACKET_LENGTH - 1;
 
-  -- We want to send an AXIS packet of M_SPI_TRANSFER_LENGTH SPI samples
+  -- We want to send an AXIS packet of SPI_TRANSFER_LENGTH SPI samples
   -- Counter for whole spi sample of 16 bits
-  signal spi_whole_sample_count : integer range 0 to M_SPI_TRANSFER_LENGTH - 1;
+  signal spi_whole_sample_count : integer range 0 to SPI_TRANSFER_LENGTH - 1;
   -- Spi whole sample count conditions
   signal do_increment_sample_counter : std_logic;
   signal do_reset_sample_counter     : std_logic;
@@ -97,13 +96,14 @@ architecture RTL of spi_master_axis is
   -- This tlast for use in process
   signal this_tlast : std_logic;
 
-  -- SPI packet length chooser from 0 to M_SPI_TRANSFER_LENGTH
-  signal spi_packet_mode_length : integer range 0 to M_SPI_TRANSFER_LENGTH;
+  -- SPI packet length chooser from 0 to SPI_TRANSFER_LENGTH
+  signal spi_packet_mode_length : integer range 0 to SPI_TRANSFER_LENGTH;
 
 begin
 
   -- Number of spi packets in one AXIS transfer
-  spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
+  -- spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
+  spi_packet_mode_length <= 16;
 
   -- I/O assignments
   miso       <= spi_miso_i;
