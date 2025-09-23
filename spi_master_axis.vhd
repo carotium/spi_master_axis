@@ -17,7 +17,7 @@ entity spi_master_axis is
     SAMPLE_PULSE_COUNTER_LENGTH : integer := 2268;
     -- Width of sclk counter for master clock division
     -- sclk_freq = m_aclk_freq / 2^(SCLK_COUNTER_WIDTH)
-    SCLK_COUNTER_WIDTH : integer := 3
+    SCLK_COUNTER_WIDTH : integer := 4
   );
   port (
     -- Master clock
@@ -102,7 +102,8 @@ architecture RTL of spi_master_axis is
 begin
 
   -- Number of spi packets in one AXIS transfer
-  spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
+  --spi_packet_mode_length <= to_integer(unsigned(spi_packet_length_i));
+  spi_packet_mode_length <= 16;
 
   -- I/O assignments
   miso       <= spi_miso_i;
