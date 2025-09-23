@@ -2,6 +2,9 @@ library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
 
+library unisim;
+  use unisim.vcomponents.all;
+
 entity spi_master_wrapper is
   generic (
     -- TDATA width in bits
@@ -21,9 +24,11 @@ entity spi_master_wrapper is
   );
   port (
     -- Master clock input
-    m_clk_i : in    std_logic;
+    -- m_clk_200M : in    std_logic;
+    sysclk_p_i : in    std_logic;
+    sysclk_n_i : in    std_logic;
     -- Master reset input
-    m_rstn_i : in    std_logic;
+    m_rst_i : in    std_logic;
 
     -- SPI ports
     -- AXI Stream packet length
@@ -43,9 +48,13 @@ entity spi_master_wrapper is
     -- Master ready input
     m_axis_tready_i : in    std_logic;
     -- Master data output
-    m_axis_tdata_o : out   std_logic_vector(7 downto 0);
+    -- m_axis_tdata_o : out   std_logic_vector(7 downto 0);
     -- Master last packet output
-    m_axis_tlast_o : out   std_logic
+    m_axis_tlast_o : out   std_logic;
+
+    m_read_data_o   : out   std_logic_vector(7 downto 0);
+    m_read_to_led_i : in    std_logic;
+    m_clk_100m_o    : out   std_logic
   );
 end entity spi_master_wrapper;
 
@@ -74,7 +83,32 @@ architecture STRUCTURE of spi_master_wrapper is
     );
   end component spi_master_axis;
 
+  signal spi_data      : std_logic_vector(31 downto 0);
+  signal prev_spi_data : std_logic_vector(7 downto 0);
+
+  signal clk_div : std_logic;
+
+  signal m_rstn_int : std_logic;
+
+  signal m_clk_200m : std_logic;
+
 begin
+
+  m_clk_100m_o <= clk_div;
+  m_rstn_int   <= not m_rst_i;
+
+  -- IBUFDS : Differential Input Buffer
+  ibufds_inst : component ibufds
+    generic map (
+      diff_term    => FALSE,
+      ibuf_low_pwr => TRUE,
+      iostandard   => "DEFAULT"
+    )
+    port map (
+      o  => m_clk_200m,
+      i  => sysclk_p_i,
+      ib => sysclk_n_i
+    );
 
   spi_component : component spi_master_axis
     generic map (
@@ -85,19 +119,44 @@ begin
       sclk_counter_width          => M_SCLK_COUNTER_WIDTH
     )
     port map (
-      clk_i               => m_clk_i,
-      rstn_i              => m_rstn_i,
+      clk_i               => m_clk_200m,
+      rstn_i              => m_rstn_int,
       spi_packet_length_i => m_spi_packet_length_i,
-      read_spi_i          => m_read_spi_i,
+      read_spi_i          => '1',
       spi_sclk_o          => m_spi_sclk_o,
       spi_miso_i          => m_spi_miso_i,
       spi_ss_o            => m_spi_ss_o,
 
-      axis_tvalid_o              => m_axis_tvalid_o,
-      axis_tready_i              => m_axis_tready_i,
-      axis_tdata_o(31 downto 24) => m_axis_tdata_o,
-      axis_tdata_o(23 downto 0)  => open,
-      axis_tlast_o               => m_axis_tlast_o
+      axis_tvalid_o => m_axis_tvalid_o,
+      axis_tready_i => '1',
+      axis_tdata_o  => spi_data,
+      axis_tlast_o  => m_axis_tlast_o
     );
+
+  spi_read_data_process : process (m_clk_200m) is
+  begin
+
+    if (rising_edge(m_clk_200m)) then
+      if (m_rst_i = '1') then
+        m_read_data_o <= (others => '0');
+      elsif (m_read_to_led_i = '1') then
+        m_read_data_o <= spi_data(11 downto 4);
+      end if;
+    end if;
+
+  end process spi_read_data_process;
+
+  clk_test_process : process (m_clk_200m) is
+  begin
+
+    if (rising_edge(m_clk_200m)) then
+      if (m_rst_i = '1') then
+        clk_div <= '0'';
+      else
+        clk_div <= not clk_div;
+      end if;
+    end if;
+
+  end process clk_test_process;
 
 end architecture STRUCTURE;
