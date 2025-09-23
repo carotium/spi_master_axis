@@ -11,7 +11,7 @@ set_property -dict { PACKAGE_PIN AD12  IOSTANDARD LVDS     } [get_ports { sysclk
 
 create_clock -period 5.000 [get_ports sysclk_p_i]
 
-#create_generated_clock -name master_clk_100M -divide_by 2 -source [get_ports {m_clk_200M}] [get_ports {clk_div}]
+#create_generated_clock -name master_clk_100m -divide_by 2 -source [get_ports {m_clk_200m}] [get_ports {clk_div}]
 
 ## Buttons
 set_property -dict { PACKAGE_PIN E18   IOSTANDARD LVCMOS12 } [get_ports { m_read_to_led_i }]; #IO_25_17 Sch=btnc
@@ -152,7 +152,7 @@ set_property -dict { PACKAGE_PIN P27   IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 set_property -dict { PACKAGE_PIN U27   IOSTANDARD LVCMOS33 } [get_ports { m_axis_tvalid_o }]; #IO_L13P_T2_MRCC_14 Sch=ja_p[1]
 #set_property -dict { PACKAGE_PIN U28   IOSTANDARD LVCMOS33 } [get_ports { ja[1] }]; #IO_L13N_T2_MRCC_14 Sch=ja_n[1]
 #set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 } [get_ports { ja[2] }]; #IO_L12P_T1_MRCC_14 Sch=ja_p[2]
-set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L12N_T1_MRCC_14 Sch=ja_n[2]
+set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 } [get_ports { m_clk_100m_o }]; #IO_L12N_T1_MRCC_14 Sch=ja_n[2]
 set_property -dict { PACKAGE_PIN T22   IOSTANDARD LVCMOS33 } [get_ports { m_spi_ss_o }]; #IO_L5P_T0_D06_14 Sch=ja_p[3]
 #set_property -dict { PACKAGE_PIN T23   IOSTANDARD LVCMOS33 } [get_ports { ja[5] }]; #IO_L5N_T0_D07_14 Sch=ja_n[3]
 set_property -dict { PACKAGE_PIN T20   IOSTANDARD LVCMOS33 } [get_ports { m_spi_miso_i }]; #IO_L4P_T0_D04_14 Sch=ja_p[4]
@@ -172,7 +172,7 @@ set_property -dict { PACKAGE_PIN T21   IOSTANDARD LVCMOS33 } [get_ports { m_spi_
 #set_property -dict { PACKAGE_PIN AC26  IOSTANDARD LVCMOS33 } [get_ports { jc[0] }]; #IO_L19P_T3_13 Sch=jc[1]
 set_property -dict { PACKAGE_PIN AJ27  IOSTANDARD LVCMOS33 } [get_ports { m_axis_tlast_o }]; #IO_L20P_T3_13 Sch=jc[2]
 #set_property -dict { PACKAGE_PIN AH30  IOSTANDARD LVCMOS33 } [get_ports { jc[2] }]; #IO_L18N_T2_13 Sch=jc[3]
-#set_property -dict { PACKAGE_PIN AK29  IOSTANDARD LVCMOS33 } [get_ports { m_clk_100M_o }]; #IO_L15P_T2_DQS_13 Sch=jc[4]
+#set_property -dict { PACKAGE_PIN AK29  IOSTANDARD LVCMOS33 } [get_ports { m_clk_100m_o }]; #IO_L15P_T2_DQS_13 Sch=jc[4]
 #set_property -dict { PACKAGE_PIN AD26  IOSTANDARD LVCMOS33 } [get_ports { m_spi_ss_o }]; #IO_L19N_T3_VREF_13 Sch=jc[7]
 #set_property -dict { PACKAGE_PIN AG30  IOSTANDARD LVCMOS33 } [get_ports { jc[5] }]; #IO_L18P_T2_13 Sch=jc[8]
 #set_property -dict { PACKAGE_PIN AK30  IOSTANDARD LVCMOS33 } [get_ports { m_spi_miso_i }]; #IO_L15N_T2_DQS_13 Sch=jc[9]
