@@ -54,7 +54,7 @@ entity spi_master_wrapper is
 
     m_read_data_o   : out   std_logic_vector(7 downto 0);
     m_read_to_led_i : in    std_logic;
-    m_clk_100m_o    : out   std_logic
+    m_clk_100M_o    : out   std_logic
   );
 end entity spi_master_wrapper;
 
@@ -90,11 +90,11 @@ architecture STRUCTURE of spi_master_wrapper is
 
   signal m_rstn_int : std_logic;
 
-  signal m_clk_200m : std_logic;
+  signal m_clk_200M : std_logic;
 
 begin
 
-  m_clk_100m_o <= clk_div;
+  m_clk_100M_o <= clk_div;
   m_rstn_int   <= not m_rst_i;
 
   -- IBUFDS : Differential Input Buffer
@@ -105,7 +105,7 @@ begin
       iostandard   => "DEFAULT"
     )
     port map (
-      o  => m_clk_200m,
+      o  => m_clk_200M,
       i  => sysclk_p_i,
       ib => sysclk_n_i
     );
@@ -119,7 +119,7 @@ begin
       sclk_counter_width          => M_SCLK_COUNTER_WIDTH
     )
     port map (
-      clk_i               => m_clk_200m,
+      clk_i               => clk_div,
       rstn_i              => m_rstn_int,
       spi_packet_length_i => m_spi_packet_length_i,
       read_spi_i          => '1',
@@ -133,10 +133,10 @@ begin
       axis_tlast_o  => m_axis_tlast_o
     );
 
-  spi_read_data_process : process (m_clk_200m) is
+  spi_read_data_process : process (m_clk_200M) is
   begin
 
-    if (rising_edge(m_clk_200m)) then
+    if (rising_edge(m_clk_200M)) then
       if (m_rst_i = '1') then
         m_read_data_o <= (others => '0');
       elsif (m_read_to_led_i = '1') then
@@ -146,12 +146,12 @@ begin
 
   end process spi_read_data_process;
 
-  clk_test_process : process (m_clk_200m) is
+  clk_test_process : process (m_clk_200M) is
   begin
 
-    if (rising_edge(m_clk_200m)) then
+    if (rising_edge(m_clk_200M)) then
       if (m_rst_i = '1') then
-        clk_div <= '0'';
+        clk_div <= '0';
       else
         clk_div <= not clk_div;
       end if;
